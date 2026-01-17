@@ -1,3 +1,4 @@
+[Deimos Discord](https://discord.gg/59UrPJwYDm)
 # FishyBusiness
 
 Automated fishing utility for Wizard101 built on the WizWalker framework.
@@ -67,3 +68,4 @@ This software is provided for educational purposes only. Use at your own risk. T
 ## License
 
 This project is provided as-is without warranty. See LICENSE for details.
+
