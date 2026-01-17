@@ -17,7 +17,7 @@ FishyBusiness automates the fishing minigame in Wizard101, allowing users to con
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.13 was what this was tested on
 - Windows OS
 - [WizWalker](https://github.com/Deimos-Wizard101/wizwalker) library (Deimos-Wizard101 fork - actively maintained)
 - Wizard101 client
