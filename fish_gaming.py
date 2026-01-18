@@ -844,6 +844,12 @@ async def patch(client:Client) -> List[tuple[int, bytes]]:
         result = await readbytes_writebytes(pattern, write_bytes, "zero_casting_timer")
         if result: address_oldbytes.append(result)
 
+    async def zero_summon_timer():
+        pattern = rb"\x48\x8D\x8B....\x48\x8B\x01\xBA\x14\x05\x00\x00\xFF\x50."
+        write_bytes = b"\x00\x00\x00\x00"
+        result = await readbytes_writebytes(pattern, write_bytes, "zero_summon_timer", offset=11)
+        if result: address_oldbytes.append(result)
+
     async def skip_caught_fish_window():
         pattern = rb"\x0F\x28\xD6.\x8B\xD7\x48\x8B\xCF\xE8....\x90"
         add = await reader.pattern_scan(pattern, return_multiple=False, module="WizardGraphicalClient.exe")
@@ -895,6 +901,7 @@ async def patch(client:Client) -> List[tuple[int, bytes]]:
         skip_casting_animation(),
         skip_summon_animation(),
         zero_casting_timer(),
+        zero_summon_timer(),
         skip_bobber_flying_animation(),
         teleport_bobber_to_target(),
         skip_bobber_water_animation(),
