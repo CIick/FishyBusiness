@@ -31,6 +31,7 @@ SLEEP_AFTER_CLICK = 0.01
 SLEEP_RETRY_DELAY = 0.01
 SLEEP_WINDOW_WAIT = 0.02
 SLEEP_GAME_STATE = 0.05
+BITE_TIMEOUT = 10.0
 
 PAGE_EXECUTE_READWRITE = 0x40
 MEM_COMMIT = 0x1000
@@ -688,14 +689,14 @@ async def patch(client:Client) -> List[tuple[int, bytes]]:
         if result: address_oldbytes.append(result)
 
     async def scare_fish_patch():
-        pattern = rb"\x0F\x2F\xC2\x76.\x41\xB1\x01"
-        write_bytes = b"\x0F\x2F\xC2\xEB"
+        pattern = rb"\x44\x0F\x2F\xFA\x76.\x41\xB1\x01"
+        write_bytes = b"\x44\x0F\x2F\xFA\xEB"
         result = await readbytes_writebytes(pattern, write_bytes, "scare_fish")
         if result: address_oldbytes.append(result)
 
     async def skip_submersion_animation():
-        pattern = rb"\xF3\x0F\x11\x87\xE4\x02\x00\x00\x44\x0F\x2F\xD8\x0F\x82\xE5\x00\x00\x00"
-        write_bytes = b"\xF3\x0F\x11\x87\xE4\x02\x00\x00\x44\x0F\x2F\xD8\x31\xF6\x90\x90\x90\x90"
+        pattern = rb"\xF3\x0F\x11\x87\xE4\x02\x00\x00\x44\x0F\x2F\xD8\x0F\x82...."
+        write_bytes = b"\xF3\x0F\x11\x87\xE4\x02\x00\x00\x44\x0F\x2F\xD8\x45\x31\xF6\x90\x90\x90"
         result = await readbytes_writebytes(pattern, write_bytes, "skip_submersion")
         if result: address_oldbytes.append(result)
 
@@ -718,13 +719,13 @@ async def patch(client:Client) -> List[tuple[int, bytes]]:
         if result: address_oldbytes.append(result)
 
     async def skip_bobber_flying_animation():
-        pattern = rb"\x0F\x2F\x15....\x0F\x86\xCA\x05\x00\x00\xF3\x0F\x10\x8F\x08\x05\x00\x00"
+        pattern = rb"\x0F\x2F\x05....\x0F\x86....\xF3\x0F\x10\x8F\x08\x05\x00\x00"
         add = await reader.pattern_scan(pattern, return_multiple=False, module="WizardGraphicalClient.exe")
         if add is None:
             logger.warning("Pattern not found: skip_bobber_flying")
             return
         old_bytes = await reader.read_bytes(add, 18)
-        write_bytes = old_bytes[:7] + b"\xE9\xCB\x05\x00\x00\x90" + old_bytes[13:]
+        write_bytes = old_bytes[:7] + b"\xE9\x8A\x05\x00\x00\x90" + old_bytes[13:]
         await reader.write_bytes(add, write_bytes)
         logger.info(f"Patched skip_bobber_flying at {hex(add)}")
         address_oldbytes.append((add, old_bytes))
@@ -746,8 +747,8 @@ async def patch(client:Client) -> List[tuple[int, bytes]]:
         address_oldbytes.append((add, old_bytes))
 
     async def skip_bobber_water_animation():
-        pattern = rb"\x49\x8B\x0C\x24\x48\x85\xC9\x0F\x84....\x83\xBF\x00\x02\x00\x00\x00"
-        write_bytes = b"\x49\x8B\x0C\x24\x48\x85\xC9\xE9\x14\x01\x00\x00\x90\x83\xBF\x00\x02\x00\x00\x00"
+        pattern = rb"\x48\x8B\x4F\x50\x48\x85\xC9\x0F\x84....\x83\xBF\x00\x02\x00\x00\x00"
+        write_bytes = b"\x48\x8B\x4F\x50\x48\x85\xC9\xE9\x15\x01\x00\x00\x90\x83\xBF\x00\x02\x00\x00\x00"
         result = await readbytes_writebytes(pattern, write_bytes, "skip_bobber_water")
         if result: address_oldbytes.append(result)
 
@@ -782,7 +783,7 @@ async def patch(client:Client) -> List[tuple[int, bytes]]:
         if result: address_oldbytes.append(result)
 
     async def skip_chest_animation_phase2():
-        pattern = rb"\x83\xF8\x6E\x0F\x83\x80\x00\x00\x00"
+        pattern = rb"\x83\xF8\x6E\x0F\x8D....\x48\x8B\x0F\xF3\x0F\x10\x49\x5C"
         write_bytes = b"\x83\xF8\x6E\xE9\x81\x00\x00\x00\x90"
         result = await readbytes_writebytes(pattern, write_bytes, "skip_chest_phase2")
         if result: address_oldbytes.append(result)
@@ -812,20 +813,20 @@ async def patch(client:Client) -> List[tuple[int, bytes]]:
         if result: address_oldbytes.append(result)
 
     async def skip_fish_animation_phase3():
-        pattern = rb"\x0F\x2F\xC8\x0F\x87\xFD\x00\x00\x00"
-        write_bytes = b"\x0F\x2F\xC8\xE9\xFE\x00\x00\x00\x90"
+        pattern = rb"\x0F\x2F\xC8\x0F\x87....\x49\x8B\x07"
+        write_bytes = b"\x0F\x2F\xC8\xE9\xFB\x00\x00\x00\x90"
         result = await readbytes_writebytes(pattern, write_bytes, "skip_fish_phase3")
         if result: address_oldbytes.append(result)
 
     async def force_early_fish_init():
-        pattern = rb"\x83\x7F\x14\x41\x0F\x8C\x3E\x03\x00\x00"
+        pattern = rb"\x83\x7F\x14\x41\x0F\x8C....\xC6\x47\x24\x01"
         write_bytes = b"\x83\x7F\x14\x41\x90\x90\x90\x90\x90\x90"
         result = await readbytes_writebytes(pattern, write_bytes, "force_early_fish_init")
         if result: address_oldbytes.append(result)
 
     async def skip_casting_animation():
-        pattern = rb"\x48\x8B\xCB\xFF\x50\x70\x90\x48\x8B\x55\xF8"
-        write = b"\x48\x8B\xCB\x90\x90\x90\x90\x48\x8B\x55\xF8"
+        pattern = rb"\x48\x8B\xCB\xFF\x50\x70\x90\x48\x8B\x55\x28"
+        write = b"\x48\x8B\xCB\x90\x90\x90\x90\x48\x8B\x55\x28"
         result = await readbytes_writebytes(pattern, write, "skip_casting_animation")
         if result:
             address_oldbytes.append(result)
@@ -845,7 +846,7 @@ async def patch(client:Client) -> List[tuple[int, bytes]]:
         if result: address_oldbytes.append(result)
 
     async def zero_summon_timer():
-        pattern = rb"\x48\x8D\x8B....\x48\x8B\x01\xBA\x14\x05\x00\x00\xFF\x50."
+        pattern = rb"\x48\x8D.....\x48\x8B\x01\xBA\x14\x05\x00\x00\xFF\x50"
         write_bytes = b"\x00\x00\x00\x00"
         result = await readbytes_writebytes(pattern, write_bytes, "zero_summon_timer", offset=11)
         if result: address_oldbytes.append(result)
@@ -1024,6 +1025,22 @@ async def banish_config(fishing_manager):
             kept_fish.append(fish)
     return kept_fish
 
+async def ensure_button_enabled(client, button_name: str):
+    buttons = await client.root_window.get_windows_with_name(button_name)
+    if not buttons:
+        return
+    btn = buttons[0]
+    try:
+        if await btn.is_control_grayed():
+            addr = await btn.read_base_address()
+            reader = MemoryReader(client._pymem)
+            await reader.write_bytes(addr + 0x328, b"\x00")
+            await reader.write_bytes(addr + 0x2B0, b"\x00")
+            logger.info(f"[GREYED] {button_name} was grayed -> re-enabled before click.")
+    except Exception as e:
+        logger.debug(f"ensure_button_enabled({button_name}) failed: {e}")
+
+
 async def refresh_pond(client, fishing_manager):
     if should_exit():
         return
@@ -1031,6 +1048,7 @@ async def refresh_pond(client, fishing_manager):
     while len(fish_list) == 0 and not should_exit():
         fish_windows = await client.root_window.get_windows_with_name("FishingWindow")
         while len(fish_windows) == 0 and not should_exit():
+            await ensure_button_enabled(client, "OpenFishingButton")
             async with client.mouse_handler:
                 await client.mouse_handler.click_window_with_name("OpenFishingButton")
             fish_windows = await client.root_window.get_windows_with_name("FishingWindow")
@@ -1133,12 +1151,15 @@ async def main():
         total = time()
         while not _cleanup_state["shutdown_requested"]:
             start = time()
+            logger.info("[STAGE 1/6] Refreshing pond and filtering fish by config...")
             await refresh_pond(client, fishing_manager)
             fish_list = await fetch_fish_list(fishing_manager)
+            logger.info(f"[STAGE 2/6] Pond ready ({len(fish_list)} fish in pool). Casting lure (Icon1)...")
 
             fish_windows = await client.root_window.get_windows_with_name("FishingWindow")
 
             while len(fish_windows) == 0 and not should_exit():
+                await ensure_button_enabled(client, "OpenFishingButton")
                 async with client.mouse_handler:
                     await client.mouse_handler.click_window_with_name("OpenFishingButton")
                 fish_windows = await client.root_window.get_windows_with_name("FishingWindow")
@@ -1153,10 +1174,13 @@ async def main():
             async with client.mouse_handler:
                 await client.mouse_handler.click_window(icon1)
 
+            logger.info("[STAGE 3/6] Lure cast. Waiting for a target fish to bite (status -> unknown2)...")
             is_hooked = False
             basket_full = False
+            bite_wait_start = time()
             while not is_hooked and not should_exit():
                 if await window_exists(client, "MessageBoxModalWindow"):
+                    logger.info("[STAGE 3/6] Basket-full popup detected -> selling basket, restarting cycle.")
                     await wait_to_click_window_with_name(client, "rightButton")
                     await sell_basket(client)
                     basket_full = False
@@ -1169,14 +1193,26 @@ async def main():
                         is_hooked = True
                         break
 
+                if not is_hooked and (time() - bite_wait_start) >= BITE_TIMEOUT:
+                    logger.warning(f"[STAGE 3/6] No fish bit within {BITE_TIMEOUT}s (pond likely empty). Re-opening fishing window and restarting cycle.")
+                    await ensure_button_enabled(client, "OpenFishingButton")
+                    async with client.mouse_handler:
+                        await client.mouse_handler.click_window_with_name("OpenFishingButton")
+                    break
+
             if should_exit():
                 break
 
             if basket_full:
                 continue
 
+            if not is_hooked:
+                continue
+
+            logger.info("[STAGE 4/6] Fish hooked! Pressing SPACEBAR to invoke the catch...")
             await client.send_key(Keycode.SPACEBAR)
 
+            logger.info(f"[STAGE 5/6] Catch invoked. Handling caught-fish window (SKIP_CAUGHT_FISH_POPUP={SKIP_CAUGHT_FISH_POPUP})...")
             fish_failed = False
             if SKIP_CAUGHT_FISH_POPUP:
                 await asyncio.sleep(SLEEP_GAME_STATE)
@@ -1211,6 +1247,7 @@ async def main():
 
                     await enable_button("OpenFishingButton")
                     await enable_button("CloseFishingButton")
+                    logger.info("[STAGE 5/6] Caught-fish popup skipped (patched); fishing buttons re-enabled.")
 
                 except Exception as e:
                     logger.warning(f"Failed to re-enable fishing buttons: {e}")
@@ -1233,8 +1270,10 @@ async def main():
                     break
 
                 if fish_failed:
+                    logger.warning("[STAGE 5/6] CaughtFishModalWindow never appeared within 10s -> catch FAILED (fish not landed). Restarting cycle. If this repeats, suspect the SPACEBAR invoke or the catch/submersion patches (skip_submersion_animation, skip_catch_animation).")
                     continue
 
+                logger.info("[STAGE 5/6] CaughtFishModalWindow appeared. Clicking exit to dismiss...")
                 while len(await client.root_window.get_windows_with_name("CaughtFishModalWindow")) > 0 and not should_exit():
                     caught_window: Window = (await client.root_window.get_windows_with_name("CaughtFishModalWindow"))[0]
                     caught_fish = await caught_window.get_child_by_name("CaughtFish")
@@ -1247,6 +1286,7 @@ async def main():
                 break
 
             fish_caught += 1
+            logger.info(f"[STAGE 6/6] Catch complete (#{fish_caught}).")
 
             if fish_caught % 100 == 0 and not IS_CHEST:
                 await sell_basket(client)
