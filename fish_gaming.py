@@ -14,14 +14,14 @@ from wizwalker.memory.memory_objects.fish import Fish, FishStatusCode
 from loguru import logger
 from memobj.process import WindowsProcess
 
-IS_CHEST = False
+IS_CHEST = True
 SCHOOL = "Any"
 RANK = 0
 ID = 0
 SIZE_MIN = 0
 SIZE_MAX = 999
 
-SKIP_CAUGHT_FISH_POPUP = True
+SKIP_CAUGHT_FISH_POPUP = False
 
 SPEEDHACK_ENABLED = False
 SPEEDHACK_SPEED = 1
@@ -652,273 +652,168 @@ async def patch(client:Client) -> List[tuple[int, bytes]]:
     address_oldbytes = []
     reader = MemoryReader(client._pymem)
 
-    async def fish_distance_check_patch():
-        pattern = rb"\x0F\x84....\xF3\x0F\x10\x70\x6C\x0F\x28\xC6"
-        write_bytes = b"\x90" * 6
-        result = await readbytes_writebytes(pattern, write_bytes, "fish_distance_check")
-        if result: address_oldbytes.append(result)
-
-    async def fish_fov_check_patch():
-        pattern = rb"\x0F\x84....\x48\x8B\x8B....\x45\x32"
-        write_bytes = b"\x90" * 6
-        result = await readbytes_writebytes(pattern, write_bytes, "fish_fov_check")
-        if result: address_oldbytes.append(result)
-
-    async def fish_distance_threshold_patch():
-        pattern = rb"\x0F\x86....\x44\x0F\x2F\x05"
-        write_bytes = b"\x90" * 6
-        result = await readbytes_writebytes(pattern, write_bytes, "fish_distance_threshold")
-        if result: address_oldbytes.append(result)
-
-    async def fish_min_distance_patch():
-        pattern = rb"\x0F\x86....\xF3\x41\x0F\x5C\xF2"
-        write_bytes = b"\x90" * 6
-        result = await readbytes_writebytes(pattern, write_bytes, "fish_min_distance")
-        if result: address_oldbytes.append(result)
-
-    async def fish_final_angle_max_patch():
-        pattern = rb"\x0F\x82....\xF3\x44\x0F\x10\x0D....\x41\x0F\x2F\xC1"
-        write_bytes = b"\x90" * 6
-        result = await readbytes_writebytes(pattern, write_bytes, "fish_final_angle_max")
-        if result: address_oldbytes.append(result)
-
-    async def fish_final_angle_min_patch():
-        pattern = rb"\x0F\x82....\xC7\x83........\x8B\x93"
-        write_bytes = b"\x90" * 6
-        result = await readbytes_writebytes(pattern, write_bytes, "fish_final_angle_min")
-        if result: address_oldbytes.append(result)
-
     async def scare_fish_patch():
-        pattern = rb"\x44\x0F\x2F\xFA\x76.\x41\xB1\x01"
-        write_bytes = b"\x44\x0F\x2F\xFA\xEB"
+        # scare fish patch
+        num_nops = 5
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\xE8....\xEB.\x83\xF9\x04\x75..\xC7\x87"
         result = await readbytes_writebytes(pattern, write_bytes, "scare_fish")
         if result: address_oldbytes.append(result)
 
-    async def skip_submersion_animation():
-        pattern = rb"\xF3\x0F\x11\x87\xE4\x02\x00\x00\x44\x0F\x2F\xD8\x0F\x82...."
-        write_bytes = b"\xF3\x0F\x11\x87\xE4\x02\x00\x00\x44\x0F\x2F\xD8\x45\x31\xF6\x90\x90\x90"
-        result = await readbytes_writebytes(pattern, write_bytes, "skip_submersion")
+    async def bobber_submerison_rng_patch():
+        # bobber submerison rng patch
+        num_nops = 2
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x7D\x37\xC7\x83........\xC7\x83"
+        result = await readbytes_writebytes(pattern, write_bytes, "bobber_submersion_rng")
         if result: address_oldbytes.append(result)
 
-    async def instant_fish_state_patch():
-        pattern = rb"\x44\x0F\x2F\xC0\x72.\x44\x89\xB3\x08\x01\x00\x00\xC7\x83\xB8\x00\x00\x00\x03"
-        write_bytes = b"\x44\x0F\x2F\xC0\x90\x90\x44\x89\xB3\x08\x01\x00\x00\xC7\x83\xB8\x00\x00\x00\x03"
-        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish_state")
+    async def fish_notice_bobber_instant_patch():
+        # fish notice bobber instant patch
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x82....\xC7\x83........\x8B\x93"
+        result = await readbytes_writebytes(pattern, write_bytes, "fish_notice_bobber_instant")
         if result: address_oldbytes.append(result)
 
-    async def fish_teleport_to_bobber_patch():
-        pattern = rb"\xF3\x41\x0F\x58\xE8\x0F\x2F\xEE\x0F\x87"
-        write_bytes = b"\xF3\x41\x0F\x58\xE8\x0F\x2F\xEE\x90\x90\x90\x90\x90\x90"
-        result = await readbytes_writebytes(pattern, write_bytes, "fish_teleport_to_bobber")
+    async def instant_fish():
+        # patch instant fish
+        num_nops = 2
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x74\x64\x48\x8B\xCF\xE8....\x44\x0F"
+        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish")
         if result: address_oldbytes.append(result)
 
-    async def sentinel_fish_teleport_patch():
-        pattern = rb"\xF3\x0F\x58\xE5\xF3\x41\x0F\x58\xE0\x0F\x2F\xDC\x77"
-        write_bytes = b"\xF3\x0F\x58\xE5\xF3\x41\x0F\x58\xE0\x0F\x2F\xDC\x90\x90"
-        result = await readbytes_writebytes(pattern, write_bytes, "sentinel_fish_teleport")
+    async def instant_fish_2():
+        # patch instant fish #2
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x82....\xF3\x44\x0F\x10\x0D....\x41\x0F\x2F\xC1"
+        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish_2")
         if result: address_oldbytes.append(result)
 
-    async def skip_bobber_flying_animation():
-        pattern = rb"\x0F\x2F\x05....\x0F\x86....\xF3\x0F\x10\x8F\x08\x05\x00\x00"
-        add = await reader.pattern_scan(pattern, return_multiple=False, module="WizardGraphicalClient.exe")
-        if add is None:
-            logger.warning("Pattern not found: skip_bobber_flying")
-            return
-        old_bytes = await reader.read_bytes(add, 18)
-        write_bytes = old_bytes[:7] + b"\xE9\x8A\x05\x00\x00\x90" + old_bytes[13:]
-        await reader.write_bytes(add, write_bytes)
-        logger.info(f"Patched skip_bobber_flying at {hex(add)}")
-        address_oldbytes.append((add, old_bytes))
-
-    async def teleport_bobber_to_target():
-        pattern = rb"\xF3\x0F\x59\xC6\xF3\x44\x0F\x58\xD0\xF3\x44\x0F\x11\x55\x88\xF3\x44\x0F\x58\xCA\xF3\x44\x0F\x11\x4D\x8C"
-        add = await reader.pattern_scan(pattern, return_multiple=False, module="WizardGraphicalClient.exe")
-        if add is None:
-            logger.warning("Pattern not found: teleport_bobber_to_target")
-            return
-        old_bytes = await reader.read_bytes(add, 26)
-        write_bytes = (old_bytes[:4] +
-                      b"\xF3\x44\x0F\x10\x57\x60" +
-                      b"\x90\x90\x90\x90\x90" +
-                      b"\xF3\x44\x0F\x10\x4F\x64" +
-                      b"\x90\x90\x90\x90\x90")
-        await reader.write_bytes(add, write_bytes)
-        logger.info(f"Patched teleport_bobber_to_target at {hex(add)}")
-        address_oldbytes.append((add, old_bytes))
-
-    async def skip_bobber_water_animation():
-        pattern = rb"\x48\x8B\x4F\x50\x48\x85\xC9\x0F\x84....\x83\xBF\x00\x02\x00\x00\x00"
-        write_bytes = b"\x48\x8B\x4F\x50\x48\x85\xC9\xE9\x15\x01\x00\x00\x90\x83\xBF\x00\x02\x00\x00\x00"
-        result = await readbytes_writebytes(pattern, write_bytes, "skip_bobber_water")
+    async def instant_fish_3():
+        # patch instant fish #3
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x86....\xF3\x41\x0F\x5C\xF2"
+        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish_3")
         if result: address_oldbytes.append(result)
 
-    async def skip_fish_rotation():
-        pattern = rb"\x83\xF9\x05\x0F\x85....\x41\x0F\x28"
-        write_bytes = b"\x83\xF9\x05\xE9\x7D\x03\x00\x00\x90\x41\x0F\x28"
-        result = await readbytes_writebytes(pattern, write_bytes, "skip_fish_rotation")
+    async def instant_fish_4():
+        # patch instant fish #4
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x86....\x44\x0F\x2F\x05"
+        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish_4")
+        if result: address_oldbytes.append(result)
+
+    async def instant_fish_5():
+        # patch instant fish #5
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x84....\x48\x8B\x8B....\x45\x32"
+        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish_5")
+        if result: address_oldbytes.append(result)
+
+    async def instant_fish_6():
+        # patch instant fish #6
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x84....\xF3\x0F\x10\x70\x6C\x0F\x28\xC6"
+        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish_6")
+        if result: address_oldbytes.append(result)
+
+    async def instant_fish_7():
+        # patch instant fish #7
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x86....\xF3\x0F\x10\x8B....\x0F\x28\xC1"
+        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish_7")
+        if result: address_oldbytes.append(result)
+
+    async def instant_fish_8():
+        # patch instant fish #8
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x86....\xF3\x0F\x10\x83....\xF3\x0F\x5C\x83"
+        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish_8")
+        if result: address_oldbytes.append(result)
+
+    async def instant_fish_9():
+        # patch instant fish #9
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x87....\xF2\x0F\x10\xB3....\xF2"
+        result = await readbytes_writebytes(pattern, write_bytes, "instant_fish_9")
+        if result: address_oldbytes.append(result)
+
+    async def skip_bobbing_patch():
+        pattern = rb"\x0F\x82....\xF3\x0F\x11\x97"
+        write_bytes = b"\xE9\xBA\x05\x00\x00\x90"
+        result = await readbytes_writebytes(pattern, write_bytes, "skip_bobbing")
+        if result: address_oldbytes.append(result)
+
+    async def skip_catch_animation():
+        pattern = rb"\x0F\x84....\x48..\x10\x02\x00\x00\xE8....\x84\xC0..\x48..\x78\x02\x00\x00\x00"
+        write_bytes = b"\xE9\x88\x00\x00\x00\x90"
+        result = await readbytes_writebytes(pattern, write_bytes, "skip_catch_animation")
         if result: address_oldbytes.append(result)
 
     async def skip_struggle():
-        pattern = rb"\x80\xBF\xF1\x04\x00\x00\x00\x74.\x80\xBF\xF2\x04\x00\x00\x00\x74."
-        write_bytes = b"\x80\xBF\xF1\x04\x00\x00\x00\x90\x90\x80\xBF\xF2\x04\x00\x00\x00\x90\x90"
+        num_nops = 6
+        write_bytes = b"\x90" * num_nops
+        pattern = rb"\x0F\x82....\x89\xB7\xE4\x02\x00\x00\x48..\xC8\x02\x00\x00"
         result = await readbytes_writebytes(pattern, write_bytes, "skip_struggle")
         if result: address_oldbytes.append(result)
 
-    async def skip_approach_delay():
-        pattern = rb"\x44\x0F\x2F\xC0\x0F\x82....\x44\x89\xB3\xC8\x00\x00\x00\xC6\x43\x74\x01"
-        add = await reader.pattern_scan(pattern, return_multiple=False, module="WizardGraphicalClient.exe")
-        if add is None:
-            logger.warning("Pattern not found: skip_approach_delay")
-            return
-        old_bytes = await reader.read_bytes(add, 21)
-        write_bytes = old_bytes[:4] + b"\x90\x90\x90\x90\x90\x90" + old_bytes[10:]
-        await reader.write_bytes(add, write_bytes)
-        logger.info(f"Patched skip_approach_delay at {hex(add)}")
-        address_oldbytes.append((add, old_bytes))
-
-    async def skip_chest_animation_phase1():
-        pattern = rb"\x83\xF8\x37\x7D\x56"
-        write_bytes = b"\x83\xF8\x37\xEB\x56"
-        result = await readbytes_writebytes(pattern, write_bytes, "skip_chest_phase1")
-        if result: address_oldbytes.append(result)
-
-    async def skip_chest_animation_phase2():
-        pattern = rb"\x83\xF8\x6E\x0F\x8D....\x48\x8B\x0F\xF3\x0F\x10\x49\x5C"
-        write_bytes = b"\x83\xF8\x6E\xE9\x81\x00\x00\x00\x90"
-        result = await readbytes_writebytes(pattern, write_bytes, "skip_chest_phase2")
-        if result: address_oldbytes.append(result)
-
-    async def skip_chest_animation_phase3():
-        pattern = rb"\xF3\x0F\x10\x0D....\x0F\x2F\xC8\x0F\x87\xB5\x00\x00\x00"
-        add = await reader.pattern_scan(pattern, return_multiple=False, module="WizardGraphicalClient.exe")
-        if add is None:
-            logger.warning("Pattern not found: skip_chest_phase3")
-            return
-        old_bytes = await reader.read_bytes(add, 17)
-        write_bytes = old_bytes[:11] + b"\xE9\xB6\x00\x00\x00\x90"
-        await reader.write_bytes(add, write_bytes)
-        logger.info(f"Patched skip_chest_phase3 at {hex(add)}")
-        address_oldbytes.append((add, old_bytes))
-
-    async def skip_fish_animation_phase1():
-        pattern = rb"\x83\xF8\x37\x0F\x8D\x8A\x00\x00\x00"
-        write_bytes = b"\x83\xF8\x37\xE9\x8B\x00\x00\x00\x90"
-        result = await readbytes_writebytes(pattern, write_bytes, "skip_fish_phase1")
-        if result: address_oldbytes.append(result)
-
-    async def skip_fish_animation_phase2():
-        pattern = rb"\x83\xF8\x6E\x0F\x8D\xBB\x00\x00\x00"
-        write_bytes = b"\x83\xF8\x6E\xE9\xBC\x00\x00\x00\x90"
-        result = await readbytes_writebytes(pattern, write_bytes, "skip_fish_phase2")
-        if result: address_oldbytes.append(result)
-
-    async def skip_fish_animation_phase3():
-        pattern = rb"\x0F\x2F\xC8\x0F\x87....\x49\x8B\x07"
-        write_bytes = b"\x0F\x2F\xC8\xE9\xFB\x00\x00\x00\x90"
-        result = await readbytes_writebytes(pattern, write_bytes, "skip_fish_phase3")
-        if result: address_oldbytes.append(result)
-
-    async def force_early_fish_init():
-        pattern = rb"\x83\x7F\x14\x41\x0F\x8C....\xC6\x47\x24\x01"
-        write_bytes = b"\x83\x7F\x14\x41\x90\x90\x90\x90\x90\x90"
-        result = await readbytes_writebytes(pattern, write_bytes, "force_early_fish_init")
-        if result: address_oldbytes.append(result)
-
-    async def skip_casting_animation():
-        pattern = rb"\x48\x8B\xCB\xFF\x50\x70\x90\x48\x8B\x55\x28"
-        write = b"\x48\x8B\xCB\x90\x90\x90\x90\x48\x8B\x55\x28"
-        result = await readbytes_writebytes(pattern, write, "skip_casting_animation")
-        if result:
-            address_oldbytes.append(result)
-            return
-        logger.warning("skip_casting_animation: Pattern not matched")
-
     async def skip_summon_animation():
+        num_nops = 5
+        write_bytes = b"\x90" * num_nops
         pattern = rb"\x8B\x54\x24.\x48\x8B\xCF\xE8....\x90\x48\x8B\x5E.\x48\x85\xDB\x74\x2E\xBF....\x8B\xC7\xF0\x0F\xC1\x43.\x83\xF8.\x75\x1D\x48\x8B\x03\x48\x8B\xCB\xFF\x50.\xF0\x0F\xC1\x7B.\x83\xFF.\x75\x0A\x48\x8B\x03\x48\x8B\xCB\xFF\x50.\x90\x48\x8B\x5C\x24.\x48\x8B\x74\x24.\x48\x83\xC4.\x5F\xC3"
-        write_bytes = b"\x90" * 5
         result = await readbytes_writebytes(pattern, write_bytes, "skip_summon_animation", offset=7)
         if result: address_oldbytes.append(result)
 
     async def zero_casting_timer():
+        write_bytes = b"\x00\x00\x00\x00"
         pattern = rb"\x49\x8D\x8E\xD0\x00\x00\x00\x48\x8B\x01\xBA\x14\x05\x00\x00\xFF\x50\x18"
-        write_bytes = b"\x49\x8D\x8E\xD0\x00\x00\x00\x48\x8B\x01\xBA\x00\x00\x00\x00\xFF\x50\x18"
-        result = await readbytes_writebytes(pattern, write_bytes, "zero_casting_timer")
+        result = await readbytes_writebytes(pattern, write_bytes, "zero_casting_timer", offset=11)
         if result: address_oldbytes.append(result)
 
     async def zero_summon_timer():
-        pattern = rb"\x48\x8D.....\x48\x8B\x01\xBA\x14\x05\x00\x00\xFF\x50"
         write_bytes = b"\x00\x00\x00\x00"
+        pattern = rb"\x48\x8D.\xA0\x00\x00\x00\x48\x8B\x01\xBA\x14\x05\x00\x00\xFF\x50\x18"
         result = await readbytes_writebytes(pattern, write_bytes, "zero_summon_timer", offset=11)
         if result: address_oldbytes.append(result)
 
-    async def skip_caught_fish_window():
-        pattern = rb"\x0F\x28\xD6.\x8B\xD7\x48\x8B\xCF\xE8....\x90"
-        add = await reader.pattern_scan(pattern, return_multiple=False, module="WizardGraphicalClient.exe")
-        if add is None:
-            logger.warning("Pattern not found: skip_caught_fish_window")
-            return
-        old_bytes = await reader.read_bytes(add, 15)
-        write_bytes = old_bytes[:9] + b"\x90\x90\x90\x90\x90" + old_bytes[14:]
-        await reader.write_bytes(add, write_bytes)
-        logger.info(f"Patched skip_caught_fish_window at {hex(add)}")
-        address_oldbytes.append((add, old_bytes))
-
-    async def bypass_ripple_framerate_limiter():
-        pattern = rb"\xF3\x0F\x11\x77\x10\xF3\x0F\x10\x05....\x0F\x2F\xF0\x0F\x86...."
-        add = await reader.pattern_scan(pattern, return_multiple=False, module="WizardGraphicalClient.exe")
-        if add is None:
-            logger.warning("Pattern not found: bypass_ripple_framerate")
-            return
-        old_bytes = await reader.read_bytes(add, 22)
-        write_bytes = old_bytes[:16] + b"\x90\x90\x90\x90\x90\x90"
-        await reader.write_bytes(add, write_bytes)
-        logger.info(f"Patched bypass_ripple_framerate at {hex(add)}")
-        address_oldbytes.append((add, old_bytes))
-
-    async def bypass_splash_framerate_limiter():
-        pattern = rb"\xF3\x0F\x11\x4F\x10\xF3\x0F\x10\x05....\x0F\x2F\xC8\x0F\x86...."
-        add = await reader.pattern_scan(pattern, return_multiple=False, module="WizardGraphicalClient.exe")
-        if add is None:
-            logger.warning("Pattern not found: bypass_splash_framerate")
-            return
-        old_bytes = await reader.read_bytes(add, 22)
-        write_bytes = old_bytes[:16] + b"\x90\x90\x90\x90\x90\x90"
-        await reader.write_bytes(add, write_bytes)
-        logger.info(f"Patched bypass_splash_framerate at {hex(add)}")
-        address_oldbytes.append((add, old_bytes))
+    async def nop_call_at_offset():
+        base = client._pymem.base_address
+        addr = base + 0x2112EA9
+        old_bytes = await reader.read_bytes(addr, 5)
+        await reader.write_bytes(addr, b"\x90\x90\x90\x90\x90")
+        logger.info(f"Patched nop_call_at_offset at {hex(addr)}")
+        address_oldbytes.append((addr, old_bytes))
 
     patches = [
-        fish_distance_check_patch(),
-        fish_fov_check_patch(),
-        fish_distance_threshold_patch(),
-        fish_min_distance_patch(),
-        fish_final_angle_max_patch(),
-        fish_final_angle_min_patch(),
         scare_fish_patch(),
-        skip_submersion_animation(),
-        instant_fish_state_patch(),
-        fish_teleport_to_bobber_patch(),
-        sentinel_fish_teleport_patch(),
-        skip_casting_animation(),
+        bobber_submerison_rng_patch(),
+        fish_notice_bobber_instant_patch(),
+        instant_fish(),
+        instant_fish_2(),
+        instant_fish_3(),
+        instant_fish_4(),
+        instant_fish_5(),
+        instant_fish_6(),
+        instant_fish_7(),
+        instant_fish_8(),
+        instant_fish_9(),
+        skip_bobbing_patch(),
+        skip_catch_animation(),
+        skip_struggle(),
         skip_summon_animation(),
         zero_casting_timer(),
         zero_summon_timer(),
-        skip_bobber_flying_animation(),
-        teleport_bobber_to_target(),
-        skip_bobber_water_animation(),
-        skip_fish_rotation(),
-        skip_struggle(),
-        skip_approach_delay(),
-        skip_chest_animation_phase1(),
-        skip_chest_animation_phase2(),
-        skip_chest_animation_phase3(),
-        force_early_fish_init(),
-        skip_fish_animation_phase1(),
-        skip_fish_animation_phase2(),
-        skip_fish_animation_phase3(),
-        skip_caught_fish_window(),
-        bypass_ripple_framerate_limiter(),
-        bypass_splash_framerate_limiter(),
+        nop_call_at_offset(),
     ]
 
     await asyncio.gather(*patches)
